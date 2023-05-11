@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -13,9 +15,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
+import static com.gary.springsecurity.demo.security.ApplicationUserPermission.COURSE_WRITE;
+import static com.gary.springsecurity.demo.security.ApplicationUserRole.*;
+
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
@@ -23,9 +29,20 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-                .antMatchers("/","/index", "/css/*","/js/*")    //whitelist some urls
-                .permitAll()
+        /**
+         * NB:
+         * 1. The order being defined for antMatches DOES really matter.
+         */
+
+        http
+                .csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/","/index", "/css/*","/js/*").permitAll()
+                .antMatchers("/api/**").hasRole(STUDENT.name())
+//                .antMatchers(HttpMethod.DELETE, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
+//                .antMatchers(HttpMethod.PUT, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
+//                .antMatchers(HttpMethod.POST, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
+   //             .antMatchers(HttpMethod.GET, "/management/api/**").hasAnyRole(ADMIN.name(), LOYALTY.name())
                 .anyRequest()
                 .authenticated()
                 .and()
@@ -38,11 +55,26 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
         UserDetails annaSmithUser = User.builder()
                 .username("annasmith")
                 .password(passwordEncoder.encode("password"))
-                .roles("STUDENT")       //this means ROLE_STUDENT
+  //              .roles(STUDENT.name())       //this means ROLE_STUDENT
+                .authorities(STUDENT.getGrantedAuthority())
+                .build();
+
+        UserDetails adminUser = User.builder()
+                .username("admin")
+                .password(passwordEncoder.encode("123456"))
+  //              .roles(ADMIN.name())       //this means ROLE_ADMIN
+                .authorities(ADMIN.getGrantedAuthority())
+                .build();
+
+        UserDetails loyaltyUser = User.builder()
+                .username("loyalty")
+                .password(passwordEncoder.encode("123456"))
+  //              .roles(LOYALTY.name())       //this means ROLE_LOYALTY
+                .authorities(LOYALTY.getGrantedAuthority())
                 .build();
 
         return new InMemoryUserDetailsManager(
-                annaSmithUser
+                annaSmithUser, adminUser, loyaltyUser
         );
     }
 }
