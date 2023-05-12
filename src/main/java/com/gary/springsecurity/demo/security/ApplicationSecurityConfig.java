@@ -56,10 +56,17 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                  * The followings are related to form login/logout and remember me features
                  */
                 .formLogin()        //form login
-                .loginPage("/login").permitAll().defaultSuccessUrl("/courses", true)
+                    .loginPage("/login")
+                    .permitAll()
+                    .defaultSuccessUrl("/courses", true)
+                    .passwordParameter("password")
+                    .usernameParameter("username")
                 .and()
       //          .rememberMe();  //defaults to 2 weeks
-                .rememberMe().tokenValiditySeconds((int)TimeUnit.DAYS.toSeconds(21)).key("somethingverysecured")
+                .rememberMe()
+                    .tokenValiditySeconds((int)TimeUnit.DAYS.toSeconds(21))
+                    .key("somethingverysecured")
+                    .rememberMeParameter("remember-me")
                 .and()
                 .logout().logoutUrl("/logout")
                     .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
